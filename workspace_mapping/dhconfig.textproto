@@ -1,0 +1,16 @@
+library_config: {
+  user_libraries: {
+    type: MAPPING_LANGUAGE
+    path: { gcs_location: "gs://workspace202104/mapping/postprocess.wstl" }
+  }
+}
+structure_mapping_config: {
+    mapping_path_config: {
+        mapping_type: MAPPING_LANGUAGE
+        mapping_config_path: {
+           name: "codelab"
+           gcs_location: "gs://workspace202104/mapping/mapping.wstl"
+        }
+    }
+}
+

@@ -1,0 +1,17 @@
+def workFunc(body) {
+  resourceType: "Patient"
+  id: "1"
+  name[]: nameInfo(body)
+  gender: body.sex
+  birthDate: body.dob
+}
+
+def nameInfo(body) {
+ family: body.lname
+ given[]: body.fname
+ use: "official"
+}
+
+Resources[]: workFunc($root);
+
+post Output_Transaction
