@@ -1,0 +1,54 @@
+{
+  "description": "Reads from NPPES CSV and writes multiple CSVs for different FHIR resources",
+  "name": "NPPESCSVToFHIRCSVTemplate",
+  "parameters": [
+    {
+      "name": "pubSubSubscription",
+      "label": "Input PubSub subscription",
+      "help_text": "Input PubSub subscription where input json exist. Ex: projects/mineral-cell-319221/subscriptions/gus-sales_SBhbGHGiAFQgp8v-sub",
+      "is_optional": false
+    },
+    {
+      "name": "mappingPath",
+      "label": "Input mapping path location",
+      "help_text": "Input mapping path location to locate textproto file. Ex: gs://healthcare-dataflow/test/mapping.textproto",
+      "is_optional": false
+    },
+    {
+      "name": "fhirStore",
+      "label": "Input fhir store location",
+      "help_text": "Input fhir store location. Ex: projects/mineral-cell-319221/locations/us/datasets/Reltio-Healthcare-Cloud/fhirStores/healthcare-poc",
+      "is_optional": false
+    },
+    {
+      "name": "readErrorPath",
+      "label": "Input GCS path to read errors",
+      "help_text": "Input GCS path to read errors. Ex: gs://healthcare-dataflow/read/read_error.txt",
+      "is_optional": false
+    },
+    {
+      "name": "writeErrorPath",
+      "label": "Input GCS path for other errors",
+      "help_text": "Input GCS path to write other errors. Ex: gs://healthcare-dataflow/write/write_error.txt",
+      "is_optional": false
+    },
+    {
+      "name": "mappingErrorPath",
+      "label": "Input GCS path for mapping errors",
+      "help_text": "Input GCS path to write mapping errors. Ex: gs://healthcare-dataflow/mapping/mapping_error.txt",
+      "is_optional": false
+    },
+    {
+      "name": "errorLogShardNum",
+      "label": "Input ErrorLogShardNumber",
+      "help_text": "Error log shard number - for example, 10",
+      "is_optional": true
+    },
+    {
+      "name": "enablePerformanceMetrics",
+      "label": "Input EnablePerformaceMetrics",
+      "help_text": "Enables performance metrics - for example, true/false",
+      "is_optional": true
+    }
+  ]
+}
