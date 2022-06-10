@@ -45,7 +45,7 @@ import org.apache.beam.sdk.options.Default;
 import org.apache.beam.sdk.options.Description;
 import org.apache.beam.sdk.options.PipelineOptionsFactory;
 import org.apache.beam.sdk.options.Validation.Required;
-import org.apache.beam.sdk.options.ValueProvider;
+import org.apache.beam.sdk.options.ValueProvider.*;
 import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.transforms.ParDo;
 import org.apache.beam.sdk.transforms.SerializableFunction;
@@ -81,9 +81,9 @@ public class Hl7v2ToFhirStreamingRunner {
         "The PubSub subscription to listen to, must be of the full format: "
             + "projects/project_id/subscriptions/subscription_id.")
     @Required
-    ValueProvider<String> getPubSubSubscription();
+    String getPubSubSubscription();
 
-    void setPubSubSubscription(ValueProvider<String> subSubscription);
+    void setPubSubSubscription(String subSubscription);
 
     @Description(
         "The path to the mapping configurations. The path will be treated as a GCS path if the"
@@ -91,55 +91,55 @@ public class Hl7v2ToFhirStreamingRunner {
             + "https://github.com/Lakshmi-Priya-Ramisetty/healthcare-data-harmonization/blob/baa4e0c7849413f7b44505a8410ee7f52745427a/mapping_configs/README.md"
             + " for more details on the mapping configuration structure.")
     @Required
-    ValueProvider<String> getMappingPath();
+    String getMappingPath();
 
-    void setMappingPath(ValueProvider<String> gcsPath);
+    void setMappingPath(String gcsPath);
 
     @Description(
         "The target FHIR Store to write data to, must be of the full format: "
             + "projects/project_id/locations/location/datasets/dataset_id/fhirStores/fhir_store_id")
     @Required
-    ValueProvider<String> getFhirStore();
+    String getFhirStore();
 
-    void setFhirStore(ValueProvider<String> fhirStore);
+    void setFhirStore(String fhirStore);
 
     @Description(
         "The path that is used to record all read errors. The path will be treated as a GCS path"
             + " if the path starts with the GCS scheme (\"gs\"), otherwise a local file.")
     @Required
-    ValueProvider<String> getReadErrorPath();
+    String getReadErrorPath();
 
-    void setReadErrorPath(ValueProvider<String> readErrorPath);
+    void setReadErrorPath(String readErrorPath);
 
     @Description(
         "The path that is used to record all write errors. The path will be "
             + "treated as a GCS path if the path starts with the GCS scheme (\"gs\"), otherwise a "
             + "local file.")
     @Required
-    ValueProvider<String> getWriteErrorPath();
+    String getWriteErrorPath();
 
-    void setWriteErrorPath(ValueProvider<String> writeErrorPath);
+    void setWriteErrorPath(String writeErrorPath);
 
     @Description(
         "The path that is used to record all mapping errors. The path will be "
             + "treated as a GCS path if the path starts with the GCS scheme (\"gs\"), otherwise a "
             + "local file.")
     @Required
-    ValueProvider<String> getMappingErrorPath();
+    String getMappingErrorPath();
 
-    void setMappingErrorPath(ValueProvider<String> mappingErrorPath);
+    void setMappingErrorPath(String mappingErrorPath);
 
     @Description("The number of shards when writing errors to GCS.")
     @Default.Integer(10)
-    ValueProvider<Integer> getErrorLogShardNum();
+    Integer getErrorLogShardNum();
 
-    void setErrorLogShardNum(ValueProvider<Integer> shardNum);
+    void setErrorLogShardNum(Integer shardNum);
 
     @Description("Whether enable metrics for performance evaluation.")
     @Default.Boolean(false)
-    ValueProvider<Boolean> getEnablePerformanceMetrics();
+    Boolean getEnablePerformanceMetrics();
 
-    void setEnablePerformanceMetrics(ValueProvider<Boolean> enablePerformanceMetrics);
+    void setEnablePerformanceMetrics(Boolean enablePerformanceMetrics);
   }
 
   private static Duration ERROR_LOG_WINDOW_SIZE = Duration.standardSeconds(5);
@@ -156,7 +156,7 @@ public class Hl7v2ToFhirStreamingRunner {
                 "ReadHL7v2Messages",
                 PubsubIO.readStrings().fromSubscription(options.getPubSubSubscription()));
     MappingFn<HclsApiHl7v2MappableMessage> mappingFn =
-        MappingFn.of(options.getMappingPath().get(), options.getEnablePerformanceMetrics().get());
+        MappingFn.of(options.getMappingPath(), options.getEnablePerformanceMetrics());
 
 
     SimpleFunction<String, HclsApiHl7v2MappableMessage> toMessage =
@@ -205,14 +205,14 @@ public class Hl7v2ToFhirStreamingRunner {
             TextIO.write()
                 .to(options.getMappingErrorPath())
                 .withWindowedWrites()
-                .withNumShards(options.getErrorLogShardNum().get()));
+                .withNumShards(options.getErrorLogShardNum()));
 
     PCollection<MappingOutput> mappedMessages =
         mappingResults.get(MAPPING_TAG).setCoder(MappedFhirMessageWithSourceTimeCoder.of());
 
     PCollection<HealthcareIOError<String>> failedBodies;
     // Commit FHIR resources.
-    if (options.getEnablePerformanceMetrics().get()) {
+    if (options.getEnablePerformanceMetrics()) {
       FhirIOWithMetrics.Write.Result writeResult =
           mappedMessages.apply(
               "WriteFHIRBundles", FhirIOWithMetrics.Write.executeBundles(options.getFhirStore()));
@@ -244,7 +244,7 @@ public class Hl7v2ToFhirStreamingRunner {
             TextIO.write()
                 .to(options.getWriteErrorPath())
                 .withWindowedWrites()
-                .withNumShards(options.getErrorLogShardNum().get()));
+                .withNumShards(options.getErrorLogShardNum()));
     return pipeline;
   }
 
