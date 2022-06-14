@@ -193,11 +193,14 @@ public class Hl7v2ToFhirStreamingRunner {
                     .setHeader(HttpHeaders.CONTENT_TYPE, "application/json")
                     .setHeader(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken).build();
             
-            HttpClient httpClient = HttpClients.custom().build();
+            HttpClient httpClient = HttpClients.createDefault();
             try {
                 HttpResponse response = httpClient.execute(request);
+                System.out.println("HttpResponse: executed successfully");
                 HttpEntity responseEntity = response.getEntity();
+                System.out.println("HttpResponse: got responseEntity successfully");
                 String content = EntityUtils.toString(responseEntity);
+                System.out.println("Got content: " + content);
     
                 JsonObject jsonObject = JsonParser.parseString(content).getAsJsonObject();
                 System.out.println(jsonObject.get("type").getAsString());
