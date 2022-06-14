@@ -60,17 +60,14 @@ import org.apache.beam.sdk.values.TupleTagList;
 import org.apache.beam.sdk.values.TypeDescriptor;
 import org.apache.beam.sdk.values.TypeDescriptors;
 
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpHeaders;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpUriRequest;
-import org.apache.http.client.methods.RequestBuilder;
 import org.apache.http.client.utils.URIBuilder;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.util.EntityUtils;
 import org.joda.time.Duration;
 import java.util.*;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpRequest.BodyPublishers;
+import java.net.http.HttpResponse;
+import java.net.http.HttpResponse.BodyHandlers;
 import java.net.URI;
 import java.net.URISyntaxException;
 
@@ -189,25 +186,39 @@ public class Hl7v2ToFhirStreamingRunner {
                 System.out.println("Error in URI Builder: " + e.getMessage());
                 return null;
             }
-            HttpUriRequest request = RequestBuilder.get().setUri(uri)
-                    .setHeader(HttpHeaders.CONTENT_TYPE, "application/json")
-                    .setHeader(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken).build();
-            
-            HttpClient httpClient = HttpClients.createDefault();
+            HttpClient client = HttpClient.newHttpClient();
+            HttpRequest request = HttpRequest.newBuilder()
+                      .uri(URI.create("https://gus-sales.reltio.com/reltio/api/SBhbGHGiAFQgp8v/" + entity))
+                      .header("Content-Type", "application/json")
+                      .header("Authorization", "Bearer " + accessToken)
+                      .build();
+            /*
+             * HttpUriRequest request = RequestBuilder.get().setUri(uri)
+             * .setHeader(HttpHeaders.CONTENT_TYPE, "application/json")
+             * .setHeader(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken).build();
+             * 
+             * HttpClient httpClient = HttpClients.createDefault();
+             */
             try {
-                HttpResponse response = httpClient.execute(request);
-                System.out.println("HttpResponse: executed successfully");
-                HttpEntity responseEntity = response.getEntity();
-                System.out.println("HttpResponse: got responseEntity successfully");
-                String content = EntityUtils.toString(responseEntity);
-                System.out.println("Got content: " + content);
+                /*
+                 * HttpResponse response = httpClient.execute(request); HttpEntity
+                 * responseEntity = response.getEntity(); String content =
+                 * EntityUtils.toString(responseEntity); int statusCode =
+                 * response.getStatusLine().getStatusCode();
+                 */
+                HttpResponse<String> response =
+                          client.send(request, BodyHandlers.ofString());
+                String content = response.body();
+                String statusCode = Integer.toString(response.statusCode());
+                System.out.println(statusCode);
+                System.out.println(content);
     
                 JsonObject jsonObject = JsonParser.parseString(content).getAsJsonObject();
                 System.out.println(jsonObject.get("type").getAsString());
                 
                 return jsonObject.get("type").getAsString();
             } catch (Exception e) {
-                System.out.println("Error in fetching the type: " + e.getMessage());
+                System.out.println("Error in fetching the token: " + e.getMessage());
                 return null;
             }
             
@@ -223,16 +234,20 @@ public class Hl7v2ToFhirStreamingRunner {
                 System.out.println("Error in URI Builder: " + e.getMessage());
                 return null;
             }
-    
-            HttpUriRequest request = RequestBuilder.post().setUri(uri)
-                    .setHeader(HttpHeaders.CONTENT_TYPE, "application/json")
-                    .setHeader(HttpHeaders.AUTHORIZATION, "Basic cmVsdGlvX3VpOm1ha2l0YQ==").build();
-            HttpClient httpClient = HttpClients.custom().build();
+            
+            HttpClient client = HttpClient.newHttpClient();
+            HttpRequest request = HttpRequest.newBuilder()
+                      .uri(uri)
+                      .header("Content-Type", "application/json")
+                      .header("Authorization", "Basic cmVsdGlvX3VpOm1ha2l0YQ==")
+                      .POST(BodyPublishers.noBody())
+                      .build();
             try {
-                HttpResponse response = httpClient.execute(request);
-                HttpEntity responseEntity = response.getEntity();
-                String content = EntityUtils.toString(responseEntity);
-                int statusCode = response.getStatusLine().getStatusCode();
+                
+                HttpResponse<String> response =
+                          client.send(request, BodyHandlers.ofString());
+                String content = response.body();
+                String statusCode = Integer.toString(response.statusCode());
                 System.out.println(statusCode);
                 System.out.println(content);
     
