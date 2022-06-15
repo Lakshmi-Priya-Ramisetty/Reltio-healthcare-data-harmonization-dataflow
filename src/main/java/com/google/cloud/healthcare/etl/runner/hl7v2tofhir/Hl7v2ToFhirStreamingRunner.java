@@ -183,6 +183,7 @@ public class Hl7v2ToFhirStreamingRunner {
         @ProcessElement
         public void processElement(DoFn<String, String>.ProcessContext context) {
           String input = context.element();
+          System.out.println(input);
           JsonObject jsonObject = JsonParser.parseString(input).getAsJsonObject();
           String jsonType = jsonObject.get("type").getAsString();
           if(jsonType.equals("ENTITIES_MERGED")){
