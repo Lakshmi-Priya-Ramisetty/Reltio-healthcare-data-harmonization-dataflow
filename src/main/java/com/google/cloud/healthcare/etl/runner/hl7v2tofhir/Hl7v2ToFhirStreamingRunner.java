@@ -289,7 +289,7 @@ public class Hl7v2ToFhirStreamingRunner {
             }
         };
 
-        PCollection<String> messages = readResult.apply("CheckType", ParDo.of(new TypeCheckChannel(options.)));
+        PCollection<String> messages = readResult.apply("CheckType", ParDo.of(new TypeCheckChannel(options.getReltioBaseUrl(), options.getReltioAuthUrl())));
 
         PCollectionTuple mappingResults = messages
                 .apply(MapElements.via(toMessage))
