@@ -195,7 +195,7 @@ public class Hl7v2ToFhirStreamingRunner {
                 String entityType = getTypeUsingEntity(uri, accessToken);
   
                 //add type property to the object
-                jsonObject.addProperty("entityType", entityType);
+                jsonObject.addProperty("mergedEntityType", entityType);
                 input = jsonObject.toString();
               }
           }
