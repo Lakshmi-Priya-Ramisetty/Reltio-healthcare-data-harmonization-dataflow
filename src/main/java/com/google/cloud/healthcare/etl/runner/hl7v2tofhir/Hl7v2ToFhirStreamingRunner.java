@@ -30,6 +30,7 @@ import org.apache.beam.sdk.io.gcp.pubsub.PubsubIO.Read;
 import org.apache.beam.sdk.transforms.SimpleFunction;
 import org.json.*;
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonObject;
 import static org.junit.Assert.*;
@@ -183,18 +184,20 @@ public class Hl7v2ToFhirStreamingRunner {
         public void processElement(DoFn<String, String>.ProcessContext context) {
           String input = context.element();
           JsonObject jsonObject = JsonParser.parseString(input).getAsJsonObject();
-          JsonObject entityObj = jsonObject.getAsJsonObject("object");
-          Boolean hasType = entityObj.has("type");
-          if(!hasType){
+          String jsonType = jsonObject.get("type").getAsString();
+          if(jsonType.equals("ENTITIES_MERGED")){
               //get type from api and insert into object
-              String uri = entityObj.get("uri").getAsString();
-              System.out.println("Fetching the type for entity: " + uri);
-              String accessToken = getAccessToken();
-              String type = getTypeUsingEntity(uri, accessToken);
-
-              //add type property to the object
-              entityObj.addProperty("type", type);
-              input = jsonObject.toString();
+              JsonArray uris = jsonObject.get("uris").getAsJsonArray();
+              if(uris.size() > 1){
+                String uri = uris.get(0).getAsString();
+                System.out.println("Fetching the type for entity: " + uri);
+                String accessToken = getAccessToken();
+                String entityType = getTypeUsingEntity(uri, accessToken);
+  
+                //add type property to the object
+                jsonObject.addProperty("entityType", entityType);
+                input = jsonObject.toString();
+              }
           }
           context.output(input);
         }
