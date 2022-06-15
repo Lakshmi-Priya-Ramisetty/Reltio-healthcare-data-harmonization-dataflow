@@ -221,12 +221,13 @@ public class Hl7v2ToFhirStreamingRunner {
             try {
                 HttpResponse response = httpClient.execute(request);
                 HttpEntity responseEntity = response.getEntity();
+                int statusCode = response.getStatusLine().getStatusCode();
                 String content = EntityUtils.toString(responseEntity);
                 
                 JsonObject jsonObject = JsonParser.parseString(content).getAsJsonObject();
-                System.out.println("Entity: " + entity + " Type: " + jsonObject.get("type").getAsString());
+                System.out.println("Status code: " + statusCode + " Entity: " + entity + " Type: " + jsonObject.get("type").getAsString());
                 
-                return jsonObject.get("type").getAsString();
+                return jsonObject.get("type").getAsString();    
             } catch (Exception e) {
                 System.out.println("Error in fetching the type: " + e.getMessage());
                 return null;
