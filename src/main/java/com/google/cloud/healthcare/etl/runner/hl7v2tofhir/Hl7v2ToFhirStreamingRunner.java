@@ -156,9 +156,29 @@ public class Hl7v2ToFhirStreamingRunner {
         Boolean getEnablePerformanceMetrics();
 
         void setEnablePerformanceMetrics(Boolean enablePerformanceMetrics);
+
+        @Description("Base URL to fetch the type if not exists based on entity.")
+        @Required
+        String getReltioBaseUrl();
+
+        void setReltioBaseUrl(String reltioBaseUrl);
+
+        @Description("Auth URL of reltio to fetch the access token.")
+        @Required
+        String getReltioAuthUrl();
+
+        void setReltioAuthUrl(String reltioAuthUrl);
     }
 
     static class TypeCheckChannel extends DoFn<String, String> {
+        private String reltioBaseUrl = null;
+        private String reltioAuthUrl = null;
+
+        public TypeCheckChannel(String reltioBaseUrl, String reltioAuthUrl){
+            this.reltioBaseUrl = reltioBaseUrl;
+            this.reltioAuthUrl = reltioAuthUrl;
+        }
+
         @ProcessElement
         public void processElement(DoFn<String, String>.ProcessContext context) {
           String input = context.element();
@@ -166,9 +186,9 @@ public class Hl7v2ToFhirStreamingRunner {
           JsonObject entityObj = jsonObject.getAsJsonObject("object");
           Boolean hasType = entityObj.has("type");
           if(!hasType){
-              System.out.println("Type not exist:" + jsonObject.toString());
               //get type from api and insert into object
               String uri = entityObj.get("uri").getAsString();
+              System.out.println("Fetching the type for entity: " + uri);
               String accessToken = getAccessToken();
               String type = getTypeUsingEntity(uri, accessToken);
 
@@ -180,46 +200,40 @@ public class Hl7v2ToFhirStreamingRunner {
         }
 
 
-        public static String getTypeUsingEntity(String entity, String accessToken) {
+        public String getTypeUsingEntity(String entity, String accessToken) {
             URI uri = null;
             try {
-                String url = "https://gus-sales.reltio.com/reltio/api/SBhbGHGiAFQgp8v/" + entity;
-                System.out.println("Url: " + url);
+                String url = this.reltioBaseUrl + "/reltio/api/SBhbGHGiAFQgp8v/" + entity;
                 uri = new URIBuilder(url).build();
             } catch (URISyntaxException e) {
                 System.out.println("Error in URI Builder: " + e.getMessage());
                 return null;
             }
-            System.out.println("Access token: " + accessToken);
+        
             HttpUriRequest request = RequestBuilder.get().setUri(uri)
                     .setHeader(HttpHeaders.CONTENT_TYPE, "application/json")
                     .setHeader(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken).build();
             
             HttpClient httpClient = HttpClients.createDefault();
             try {
-                System.out.println("HttpUriRequest: request started");
                 HttpResponse response = httpClient.execute(request);
-                System.out.println("HttpResponse: executed successfully");
                 HttpEntity responseEntity = response.getEntity();
-                System.out.println("HttpResponse: got responseEntity successfully");
                 String content = EntityUtils.toString(responseEntity);
-                System.out.println("Got content: " + content);
-    
+                
                 JsonObject jsonObject = JsonParser.parseString(content).getAsJsonObject();
-                System.out.println(jsonObject.get("type").getAsString());
+                System.out.println("Entity: " + entity + " Type: " + jsonObject.get("type").getAsString());
                 
                 return jsonObject.get("type").getAsString();
             } catch (Exception e) {
                 System.out.println("Error in fetching the type: " + e.getMessage());
                 return null;
             }
-            
         }
     
-        public static String getAccessToken() {
+        public String getAccessToken() {
             URI uri = null;
             try {
-                uri = new URIBuilder("https://auth.reltio.com/oauth/token")
+                uri = new URIBuilder(this.reltioAuthUrl + "/token")
                         .setParameter("username", "google.hde.fhir.connector").setParameter("password", "DrReLT0L111$")
                         .setParameter("grant_type", "password").build();
             } catch (URISyntaxException e) {
@@ -235,13 +249,7 @@ public class Hl7v2ToFhirStreamingRunner {
                 HttpResponse response = httpClient.execute(request);
                 HttpEntity responseEntity = response.getEntity();
                 String content = EntityUtils.toString(responseEntity);
-                int statusCode = response.getStatusLine().getStatusCode();
-                System.out.println(statusCode);
-                System.out.println(content);
-    
                 JsonObject jsonObject = JsonParser.parseString(content).getAsJsonObject();
-                System.out.println(jsonObject.get("access_token").getAsString());
-    
                 return jsonObject.get("access_token").getAsString();
             } catch (Exception e) {
                 System.out.println("Error in fetching the token: " + e.getMessage());
@@ -281,7 +289,7 @@ public class Hl7v2ToFhirStreamingRunner {
             }
         };
 
-        PCollection<String> messages = readResult.apply("CheckType", ParDo.of(new TypeCheckChannel()));
+        PCollection<String> messages = readResult.apply("CheckType", ParDo.of(new TypeCheckChannel(options.)));
 
         PCollectionTuple mappingResults = messages
                 .apply(MapElements.via(toMessage))
