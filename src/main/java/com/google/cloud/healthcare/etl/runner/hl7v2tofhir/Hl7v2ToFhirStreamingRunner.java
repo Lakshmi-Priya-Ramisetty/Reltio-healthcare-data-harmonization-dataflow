@@ -182,25 +182,30 @@ public class Hl7v2ToFhirStreamingRunner {
 
         @ProcessElement
         public void processElement(DoFn<String, String>.ProcessContext context) {
-          String input = context.element();
-          System.out.println(input);
-          JsonObject jsonObject = JsonParser.parseString(input).getAsJsonObject();
-          String jsonType = jsonObject.get("type").getAsString();
-          if(jsonType.equals("ENTITIES_MERGED")){
-              //get type from api and insert into object
-              JsonArray uris = jsonObject.get("uris").getAsJsonArray();
-              if(uris.size() > 1){
-                String uri = uris.get(0).getAsString();
-                System.out.println("Fetching the type for entity: " + uri);
-                String accessToken = getAccessToken();
-                String entityType = getTypeUsingEntity(uri, accessToken);
-  
-                //add type property to the object
-                jsonObject.addProperty("mergedEntityType", entityType);
-                input = jsonObject.toString();
-              }
-          }
-          context.output(input);
+            String input = context.element();
+            try{
+                JsonObject jsonObject = JsonParser.parseString(input).getAsJsonObject();
+                String jsonType = jsonObject.get("type").getAsString();
+                if(jsonType.equals("ENTITIES_MERGED")){
+                    System.out.println("ENTITIES_MERGED Input: " + input);
+                    //get type from api and insert into object
+                    JsonArray uris = jsonObject.get("uris").getAsJsonArray();
+                    if(uris.size() > 1){
+                        String uri = uris.get(0).getAsString();
+                        System.out.println("Fetching the type for entity: " + uri);
+                        String accessToken = getAccessToken();
+                        String entityType = getTypeUsingEntity(uri, accessToken);
+        
+                        //add type property to the object
+                        jsonObject.addProperty("mergedEntityType", entityType);
+                        input = jsonObject.toString();
+                    }
+                }
+            }catch(Exception e){
+                System.out.println("Exception in handling the message: " + input + " Error: " + e.getMessage());
+            }
+            
+            context.output(input);
         }
 
 
