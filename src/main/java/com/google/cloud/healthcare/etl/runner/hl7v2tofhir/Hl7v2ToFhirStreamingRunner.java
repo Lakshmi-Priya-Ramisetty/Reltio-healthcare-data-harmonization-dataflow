@@ -21,10 +21,12 @@ import com.google.cloud.healthcare.etl.model.mapping.HclsApiHl7v2MappableMessage
 import com.google.cloud.healthcare.etl.model.mapping.HclsApiHl7v2MappableMessageCoder;
 import com.google.cloud.healthcare.etl.model.mapping.MappedFhirMessageWithSourceTimeCoder;
 import com.google.cloud.healthcare.etl.model.mapping.MappingOutput;
+import com.google.cloud.healthcare.etl.helpers.SecretManager;
 import com.google.cloud.healthcare.etl.pipeline.MappingFn;
 import org.apache.beam.runners.dataflow.options.DataflowPipelineOptions;
 import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.io.TextIO;
+import org.apache.beam.sdk.values.TupleTag;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubIO;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubIO.Read;
 import org.apache.beam.sdk.transforms.SimpleFunction;
@@ -96,6 +98,8 @@ import java.net.URISyntaxException;
  * fix this.
  */
 public class Hl7v2ToFhirStreamingRunner {
+    private static final TupleTag<String> pubsubMessageTuple = new TupleTag<String>() {};
+	private static final TupleTag<String> readErrorTuple = new TupleTag<String>() {};
 
     // TODO(b/155226578): add more sophisticated validations.
     /** Pipeline options. */
@@ -181,8 +185,7 @@ public class Hl7v2ToFhirStreamingRunner {
         }
 
         @ProcessElement
-        public void processElement(DoFn<String, String>.ProcessContext context) {
-            String input = context.element();
+        public void processElement(@Element String input, MultiOutputReceiver multiOutputReceiver, ProcessContext context) {
             try{
                 JsonObject jsonObject = JsonParser.parseString(input).getAsJsonObject();
                 String jsonType = jsonObject.get("type").getAsString();
@@ -201,11 +204,11 @@ public class Hl7v2ToFhirStreamingRunner {
                         input = jsonObject.toString();
                     }
                 }
+                multiOutputReceiver.get(pubsubMessageTuple).output(input);
             }catch(Exception e){
                 System.out.println("Exception in handling the message: " + input + " Error: " + e.getMessage());
+                multiOutputReceiver.get(readErrorTuple).output(input);
             }
-            
-            context.output(input);
         }
 
 
@@ -277,6 +280,16 @@ public class Hl7v2ToFhirStreamingRunner {
         Options options = PipelineOptionsFactory.fromArgs(args).withValidation().as(Options.class);
         Pipeline pipeline = Pipeline.create(options);
 
+        String projectId = options.getProject();
+        System.out.println("Projectid: " + projectId);
+        String usernameKey = "reltio-username";//options.getUsernameKey();
+        String passwordKey = "reltio-password";//options.getPasswordKey();
+        String versionId = "latest";
+        String username = SecretManager.accessSecretVersion(projectId, usernameKey, versionId);
+        System.out.println("username: " + username);
+        String password = SecretManager.accessSecretVersion(projectId, passwordKey, versionId);
+        System.out.println("password: " + password);
+
         PCollection<String> readResult = pipeline
                 .apply(
                         "ReadHL7v2Messages",
@@ -299,9 +312,30 @@ public class Hl7v2ToFhirStreamingRunner {
             }
         };
 
-        PCollection<String> messages = readResult.apply("CheckType", ParDo.of(new TypeCheckChannel(options.getReltioBaseUrl(), options.getReltioAuthUrl())));
+        PCollectionTuple pubsubMessages = readResult
+                .apply(
+                    "CheckType", 
+                    ParDo.of(new TypeCheckChannel(options.getReltioBaseUrl(), options.getReltioAuthUrl())).withOutputTags(pubsubMessageTuple, TupleTagList.of(readErrorTuple)));
 
-        PCollectionTuple mappingResults = messages
+        // Report Read errors.
+        pubsubMessages
+                .get(readErrorTuple)
+                .apply(
+                        Window.<String>into(FixedWindows.of(ERROR_LOG_WINDOW_SIZE))
+                                .triggering(
+                                        Repeatedly.forever(
+                                                AfterProcessingTime.pastFirstElementInPane()
+                                                        .plusDelayOf(ERROR_LOG_WINDOW_SIZE)))
+                                .withAllowedLateness(Duration.ZERO)
+                                .discardingFiredPanes())
+                .apply(
+                        "ReportMappingErrors",
+                        TextIO.write()
+                                .to(options.getReadErrorPath())
+                                .withWindowedWrites()
+                                .withNumShards(options.getErrorLogShardNum()));
+        
+        PCollectionTuple mappingResults = pubsubMessages.get(pubsubMessageTuple)
                 .apply(MapElements.via(toMessage))
                 .apply(
                         "MapMessages",
