@@ -285,10 +285,10 @@ public class Hl7v2ToFhirStreamingRunner {
         String usernameKey = "reltio-username";//options.getUsernameKey();
         String passwordKey = "reltio-password";//options.getPasswordKey();
         String versionId = "latest";
-        String username = SecretManager.accessSecretVersion(projectId, usernameKey, versionId);
-        System.out.println("username: " + username);
-        String password = SecretManager.accessSecretVersion(projectId, passwordKey, versionId);
-        System.out.println("password: " + password);
+        //String username = SecretManager.accessSecretVersion(projectId, usernameKey, versionId);
+        //System.out.println("username: " + username);
+        //String password = SecretManager.accessSecretVersion(projectId, passwordKey, versionId);
+        //System.out.println("password: " + password);
 
         PCollection<String> readResult = pipeline
                 .apply(
