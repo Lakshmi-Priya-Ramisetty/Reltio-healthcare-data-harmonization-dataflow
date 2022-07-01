@@ -1,6 +1,8 @@
 package com.google.cloud.healthcare.etl.helpers;
 
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.Base64;
 
 import com.google.api.client.http.GenericUrl;
 import com.google.api.client.http.HttpRequest;
@@ -11,6 +13,8 @@ import com.google.api.client.json.JsonObjectParser;
 import com.google.api.client.json.gson.GsonFactory;
 import com.google.auth.http.HttpCredentialsAdapter;
 import com.google.auth.oauth2.GoogleCredentials;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 
 public class SecretManager {
 	public static String getSecretValue(String projectId, String secret, String version) {
