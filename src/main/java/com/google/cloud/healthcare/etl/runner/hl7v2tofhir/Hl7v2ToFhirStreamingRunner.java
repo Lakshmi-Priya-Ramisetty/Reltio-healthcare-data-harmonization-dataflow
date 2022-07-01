@@ -21,7 +21,7 @@ import com.google.cloud.healthcare.etl.model.mapping.HclsApiHl7v2MappableMessage
 import com.google.cloud.healthcare.etl.model.mapping.HclsApiHl7v2MappableMessageCoder;
 import com.google.cloud.healthcare.etl.model.mapping.MappedFhirMessageWithSourceTimeCoder;
 import com.google.cloud.healthcare.etl.model.mapping.MappingOutput;
-import com.google.cloud.healthcare.etl.helpers.ApplicationCredentials;
+import com.google.cloud.healthcare.etl.helpers.SecretManager;
 import com.google.cloud.healthcare.etl.pipeline.MappingFn;
 import org.apache.beam.runners.dataflow.options.DataflowPipelineOptions;
 import org.apache.beam.sdk.Pipeline;
@@ -285,10 +285,10 @@ public class Hl7v2ToFhirStreamingRunner {
         String usernameKey = "reltio-username";//options.getUsernameKey();
         String passwordKey = "reltio-password";//options.getPasswordKey();
         String versionId = "latest";
-        String username = ApplicationCredentials.getPayload(projectId, usernameKey, versionId);
-        //System.out.println("username: " + username);
-        //String password = SecretManager.accessSecretVersion(projectId, passwordKey, versionId);
-        //System.out.println("password: " + password);
+        String username = SecretManager.getSecretValue(projectId, usernameKey, versionId);
+        System.out.println("username: " + username);
+        String password = SecretManager.getSecretValue(projectId, passwordKey, versionId);
+        System.out.println("password: " + password);
 
         PCollection<String> readResult = pipeline
                 .apply(
