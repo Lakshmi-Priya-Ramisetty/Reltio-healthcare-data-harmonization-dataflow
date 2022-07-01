@@ -17,7 +17,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
 public class ApplicationCredentials {
-	public static String getSecretValue(String projectId, String secret, String version) {
+	public static String getPayload(String projectId, String secret, String version) {
         try{
             GoogleCredentials googleCredentials = GoogleCredentials.getApplicationDefault();
             //GoogleCredentials.fromStream(new FileInputStream("/path/to/credentials.json"));
