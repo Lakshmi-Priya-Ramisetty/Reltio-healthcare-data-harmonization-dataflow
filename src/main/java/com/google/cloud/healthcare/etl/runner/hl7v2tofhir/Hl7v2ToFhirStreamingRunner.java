@@ -173,15 +173,31 @@ public class Hl7v2ToFhirStreamingRunner {
         String getReltioAuthUrl();
 
         void setReltioAuthUrl(String reltioAuthUrl);
+
+        @Description("Username secret key to authenticate the api")
+        @Required
+        String getUsernameKey();
+
+        void setUsernameKey(String usernameKey);
+
+        @Description("Password secret key to authenticate the api")
+        @Required
+        String getPasswordKey();
+
+        void getPasswordKey(String passwordKey);
     }
 
     static class TypeCheckChannel extends DoFn<String, String> {
         private String reltioBaseUrl = null;
         private String reltioAuthUrl = null;
+        private String username = null;
+        private String password = null;
 
-        public TypeCheckChannel(String reltioBaseUrl, String reltioAuthUrl){
+        public TypeCheckChannel(String reltioBaseUrl, String reltioAuthUrl, String username, String password) {
             this.reltioBaseUrl = reltioBaseUrl;
             this.reltioAuthUrl = reltioAuthUrl;
+            this.username = username;
+            this.password = password;
         }
 
         @ProcessElement
@@ -247,7 +263,7 @@ public class Hl7v2ToFhirStreamingRunner {
             URI uri = null;
             try {
                 uri = new URIBuilder(this.reltioAuthUrl + "/token")
-                        .setParameter("username", "google.hde.fhir.connector").setParameter("password", "DrReLT0L111$")
+                        .setParameter("username", this.username).setParameter("password", this.password)
                         .setParameter("grant_type", "password").build();
             } catch (URISyntaxException e) {
                 System.out.println("Error in URI Builder: " + e.getMessage());
@@ -282,8 +298,8 @@ public class Hl7v2ToFhirStreamingRunner {
 
         String projectId = options.getProject();
         System.out.println("Projectid: " + projectId);
-        String usernameKey = "reltio-username";//options.getUsernameKey();
-        String passwordKey = "reltio-password";//options.getPasswordKey();
+        String usernameKey = options.getUsernameKey();
+        String passwordKey = options.getPasswordKey();
         String versionId = "latest";
         String username = ApplicationCredentials.getPayload(projectId, usernameKey, versionId);
         System.out.println("username: " + username);
@@ -315,7 +331,7 @@ public class Hl7v2ToFhirStreamingRunner {
         PCollectionTuple pubsubMessages = readResult
                 .apply(
                     "CheckType", 
-                    ParDo.of(new TypeCheckChannel(options.getReltioBaseUrl(), options.getReltioAuthUrl())).withOutputTags(pubsubMessageTuple, TupleTagList.of(readErrorTuple)));
+                    ParDo.of(new TypeCheckChannel(options.getReltioBaseUrl(), options.getReltioAuthUrl(), username, password)).withOutputTags(pubsubMessageTuple, TupleTagList.of(readErrorTuple)));
 
         // Report Read errors.
         pubsubMessages
