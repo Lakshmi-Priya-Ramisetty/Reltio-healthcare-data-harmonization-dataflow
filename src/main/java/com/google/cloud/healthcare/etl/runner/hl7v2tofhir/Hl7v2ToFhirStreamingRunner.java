@@ -184,7 +184,7 @@ public class Hl7v2ToFhirStreamingRunner {
         @Required
         String getPasswordKey();
 
-        void getPasswordKey(String passwordKey);
+        void setPasswordKey(String passwordKey);
     }
 
     static class TypeCheckChannel extends DoFn<String, String> {
