@@ -287,8 +287,8 @@ public class Hl7v2ToFhirStreamingRunner {
         String versionId = "latest";
         String username = ApplicationCredentials.getPayload(projectId, usernameKey, versionId);
         System.out.println("username: " + username);
-        //String password = SecretManager.accessSecretVersion(projectId, passwordKey, versionId);
-        //System.out.println("password: " + password);
+        String password = ApplicationCredentials.getPayload(projectId, passwordKey, versionId);
+        System.out.println("password: " + password);
 
         PCollection<String> readResult = pipeline
                 .apply(
