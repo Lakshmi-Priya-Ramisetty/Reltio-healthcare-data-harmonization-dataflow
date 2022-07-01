@@ -13,22 +13,27 @@ import com.google.auth.http.HttpCredentialsAdapter;
 import com.google.auth.oauth2.GoogleCredentials;
 
 public class ApplicationCredentials {
-	public static String getPayload(String projectId, String secret, String version) throws IOException {
-		GoogleCredentials googleCredentials = GoogleCredentials.getApplicationDefault();
-        //GoogleCredentials.fromStream(new FileInputStream("/path/to/credentials.json"));
-
-		String url = String.format("https://secretmanager.googleapis.com/v1/projects/%s/secrets/%s/versions/%s:access", projectId, secret, version);
-
-		HttpCredentialsAdapter credentialsAdapter = new HttpCredentialsAdapter(googleCredentials);
-		HttpRequestFactory requestFactory = new NetHttpTransport().createRequestFactory(credentialsAdapter);
-		HttpRequest request = requestFactory.buildGetRequest(new GenericUrl(url));
-
-		JsonObjectParser parser = new JsonObjectParser(GsonFactory.getDefaultInstance());
-		request.setParser(parser);
-
-		HttpResponse response = request.execute();
-		String data = response.parseAsString();
-		System.out.println(data);
-		return data;
+	public static String getPayload(String projectId, String secret, String version) {
+        try{
+            GoogleCredentials googleCredentials = GoogleCredentials.getApplicationDefault();
+            //GoogleCredentials.fromStream(new FileInputStream("/path/to/credentials.json"));
+    
+            String url = String.format("https://secretmanager.googleapis.com/v1/projects/%s/secrets/%s/versions/%s:access", projectId, secret, version);
+    
+            HttpCredentialsAdapter credentialsAdapter = new HttpCredentialsAdapter(googleCredentials);
+            HttpRequestFactory requestFactory = new NetHttpTransport().createRequestFactory(credentialsAdapter);
+            HttpRequest request = requestFactory.buildGetRequest(new GenericUrl(url));
+    
+            JsonObjectParser parser = new JsonObjectParser(GsonFactory.getDefaultInstance());
+            request.setParser(parser);
+    
+            HttpResponse response = request.execute();
+            String data = response.parseAsString();
+            System.out.println(data);
+            return data;
+        }catch(Exception e){
+            System.out.println("Error in accessing the key: " + e.getMessage());
+        }
+		return null;
 	}
 }
