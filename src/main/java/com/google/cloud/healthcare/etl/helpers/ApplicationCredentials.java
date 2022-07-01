@@ -16,6 +16,7 @@ import com.google.auth.oauth2.GoogleCredentials;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
+//https://github.com/googleapis/google-auth-library-java#using-external-identities
 public class ApplicationCredentials {
 	public static String getPayload(String projectId, String secret, String version) {
         try{
