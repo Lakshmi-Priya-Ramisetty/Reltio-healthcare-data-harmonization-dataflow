@@ -16,7 +16,7 @@ import com.google.auth.oauth2.GoogleCredentials;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
-public class SecretManager {
+public class ApplicationCredentials {
 	public static String getSecretValue(String projectId, String secret, String version) {
         try{
             GoogleCredentials googleCredentials = GoogleCredentials.getApplicationDefault();
