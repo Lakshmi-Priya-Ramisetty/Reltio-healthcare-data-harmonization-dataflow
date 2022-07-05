@@ -302,9 +302,12 @@ public class Hl7v2ToFhirStreamingRunner {
         String passwordKey = options.getPasswordKey();
         String versionId = "latest";
         String username = ApplicationCredentials.getPayload(projectId, usernameKey, versionId);
-        System.out.println("username: " + username);
         String password = ApplicationCredentials.getPayload(projectId, passwordKey, versionId);
-        System.out.println("password: " + password);
+
+        if(username == null || password == null || username.isEmpty() || password.isEmpty()){
+            System.out.println("Reltio Username and password is empty or null. Stopping the process...");
+            return null;
+        } 
 
         PCollection<String> readResult = pipeline
                 .apply(
